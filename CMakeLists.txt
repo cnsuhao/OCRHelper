@@ -1,24 +1,26 @@
-cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
-project(supplier_ocr VERSION 0.1 LANGUAGES CXX)
+project( supplier_ocr LANGUAGES CXX )
+
+cmake_minimum_required( VERSION 2.8 )
+set ( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
+set ( CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so" )
+set ( CMAKE_BUILD_TYPE Debug )
+
+find_package ( MySQLClient REQUIRED )
+find_package ( Threads REQUIRED )
+find_package ( LibDL REQUIRED )
+find_package ( LibLept REQUIRED )
 
 ###############################################################################
 ## target definitions #########################################################
 ###############################################################################
 
-file(GLOB SOURCES
- 	main.cpp
- 	src/Logger.cpp
-	src/TesseractEngine.cpp)
+file( GLOB_RECURSE SOURCES 	"${PROJECT_SOURCE_DIR}/main.cpp" 
+							"${PROJECT_SOURCE_DIR}/src/*.cpp" )
 
 add_executable(supplier_ocr ${SOURCES})
-set(CMAKE_BUILD_TYPE Debug)
 
-###############################################################################
-## compiler definitions########################################################
-###############################################################################
-
-set_property(TARGET supplier_ocr PROPERTY CXX_STANDARD 11)
-set_property(TARGET supplier_ocr PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property( TARGET supplier_ocr PROPERTY CXX_STANDARD 11 )
+set_property( TARGET supplier_ocr PROPERTY CXX_STANDARD_REQUIRED ON )
 
 ###############################################################################
 ## dependencies ###############################################################
@@ -65,6 +67,16 @@ link_directories(	${POCO_LIB_DIR}
 			${ASPRISE_LIB_DIR} 
 			${LEPT_LIB_DIR}
 			${TESSERACT_LIB_DIR})
+
+
+if ( MYSQLCLIENT_STATIC_LIBRARIES )
+	message ( STATUS "Linking static with ${MYSQLCLIENT_STATIC_LIBRARIES}" )
+	set ( "LIBMARIADB" ${MYSQLCLIENT_STATIC_LIBRARIES} )
+else ( MYSQLCLIENT_STATIC_LIBRARIES )
+	message ( STATUS "Linking dynamic with ${MYSQLCLIENT_LIBRARIES}" )
+	set ( "LIBMARIADB" ${MYSQLCLIENT_LIBRARIES} )
+endif()
+
 
 target_link_libraries(	supplier_ocr 
 			${POCO_LIBS} 

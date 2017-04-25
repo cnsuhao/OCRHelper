@@ -13,42 +13,44 @@ using namespace std;
 using namespace engine;
 
 TesseractEngine::TesseractEngine()
-: handle(NULL),
-  img(NULL)
+: _handle(NULL),
+  _img(NULL),
+  _filename(),
+  _lang("deu")
 {}
 
 TesseractEngine::~TesseractEngine()
 {}
 
-string TesseractEngine::run()
+const string& TesseractEngine::run()
 {
-	if((img = pixRead(strFilename.c_str())) == NULL)
+	if((_img = pixRead(_filename.c_str())) == NULL)
 		die("Error reading image\n");
 
-	handle = new tesseract::TessBaseAPI();
+	_handle = new tesseract::TessBaseAPI();
 
 	// Initialize tesseract-ocr with English, without specifying tessdata path
-	if (handle->Init(NULL, strLang.c_str()))
+	if (_handle->Init(NULL, _lang.c_str()))
 		die("Error initialising tesseract\n");
 
 	// Open input image with leptonica library
-	handle->SetImage(img);
-
-	handle->Recognize(0);
+	_handle->SetImage(_img);
+	_handle->Recognize(0);
 
 	// Get OCR result
-	output = handle->GetUTF8Text();
+	const char* out = _handle->GetUTF8Text();
+	_output = string(out);
 
 	// Destroy used object and release memory
-	handle->End();
+	_handle->End();
 
-	pixDestroy(&img);
+	pixDestroy(&_img);
 
-	return output;
+	return _output;
 }
 
 
-void TesseractEngine::init(std::string strPath_)
+void TesseractEngine::init(const string& path_)
 {
-	this->strFilename = strPath_;
+	_filename = path_;
 }

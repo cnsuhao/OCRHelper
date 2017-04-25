@@ -22,17 +22,15 @@ namespace engine
 		TesseractEngine();
 		virtual ~TesseractEngine();
 
-		void init(std::string strPath_);
-		std::string run();
+		void init(const std::string& strPath_);
+		const std::string& run();
 
 	private:
 
-		tesseract::TessBaseAPI 	*handle;
-		PIX 					*img;
-
-		std::string 			strFilename;
-		std::string	 			strLang = "deu";
-
+		tesseract::TessBaseAPI 	*_handle;
+		PIX 					*_img;
+		std::string 			_filename;
+		std::string	 			_lang;
 	};
 }
 

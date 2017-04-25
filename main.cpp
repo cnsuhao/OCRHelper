@@ -1,20 +1,40 @@
-#include <iostream>
+#include <string>
 #include <getopt.h>
 
-#include "env/include/Asprise/asprise_ocr_api.h"
+#define _DEBUG
 
+//Aprise
+#include "env/include/Asprise/asprise_ocr_api.h"
+//logger
 #include "inc/Logger.h"
+//parser
+#include "inc/KeyValueParser.h"
+//engines
 #include "inc/engine/TesseractEngine.h"
+//domain
+//policy
+#include "inc/policy/MetaInformationPolicy.h"
 
 using namespace std;
 using namespace engine;
 
-#define CL_OPTION_NO_ARGUMENT 			0
-#define CL_OPTION_ARGUMENT_REQUIRED 	1
-#define CL_OPTION_ARGUMENT_OPTINIONAL 	2
+#define CL_OPTION_NO_ARGUMENT 				0
+#define CL_OPTION_ARGUMENT_REQUIRED 		1
+#define CL_OPTION_ARGUMENT_OPTINIONAL 		2
+
+#define PARAM_LOGLEVEL_REQUIRED				0x01
+#define PARAM_LOGFILE_REQUIRED				0x02
+#define PARAM_INPUT_REQUIRED				0x04
+#define PARAM_POLICY_REQUIRED				0x08
+#define PARAM_SUPPLIER_ORDER_ID_REQUIRED	0x10
+
 
 #define VERSION "ocr-0.1.0"
 
+static bool checkInputParameterMask(int mask_)
+{
+	return mask_ == 0x1F ? true : false;
+}
 
 static void showUsage(char* path)
 {
@@ -56,44 +76,24 @@ void testAspriseOcr()
    dynamic_unload_aocr_library(libHandle);
 }
 
-void runTesseract()
+const string& runTesseract(const string& file)
 {
 	TesseractEngine tess;
-	tess.init("..//data//faller1.png");
-	string str = tess.run();
-	std::cout << "Returned: " << str << std::endl;
+	tess.init(file);
+	return tess.run();
 }
-
-
-//--loglevel=debug
-//--logfile=/opt/supplier_ocr/log/noch_20170101.log
-//--input=/opt/supplier_ocr/input/noch_20170101.pdf
-//--policy=/opt/supplier_ocr/etc/noch.cfg
-//--supplier_order_id=123456
 
 int main(int argc, char *argv[])
 {
-	string strSupplierOrderId = "";
-	string strLogLevel = "none";
-	string strLogFile = "test.log";
-	string strInput = "";
-	string strPolicy = "";
+	string strSupplierOrderId 	= "";
+	string strLogLevel 			= "trace";
+	string strLogFile 			= "test.log";
+	string strInput 			= "";
+	string strPolicy 			= "";
 
-
-	//runTesseract();
-
-	OcrLogger logger;
-
-
-
-
-
-
-
-	logger.init(strLogFile, strLogLevel);
-	logger();
-
+	int mask = 0;
 	int c;
+
 	static struct option long_options[] = {
 		{"loglevel",     		CL_OPTION_ARGUMENT_REQUIRED, 	0,  'l' },
 		{"logfile",     		CL_OPTION_ARGUMENT_REQUIRED,	0,  'f' },
@@ -108,53 +108,24 @@ int main(int argc, char *argv[])
 		// check to see if a single character or long option came through
 		switch (c)
 		{
-			 case 	-1:       			/* no more arguments */
-			 case 	0:       			/* long options toggles */
-			 break;
-
-			 case 'l':
-			 {
-				 strLogLevel = optarg;
-				 break;
-			 }
-
-			 case 'f':
-			 {
-				 strLogFile = optarg;
-				 break;
-			 }
-
-			 case 'i':
-			 {
-				 strInput = optarg;
-				 break;
-			 }
-
-			 case 'p':
-			 {
-				 strPolicy = optarg;
-				 break;
-			 }
-
-			 case 'o':
-			 {
-				 strSupplierOrderId = optarg;
-				 break;
-			 }
-
+			 case  -1:     	/* no more arguments */
+			 case  0:     	/* long options toggles */		break;
+			 case 'l': 	{	strLogLevel = optarg;			mask |= PARAM_LOGLEVEL_REQUIRED;			break; }
+			 case 'f': 	{	strLogFile = optarg;			mask |= PARAM_LOGFILE_REQUIRED;				break; }
+			 case 'i':	{	strInput = optarg;				mask |= PARAM_INPUT_REQUIRED;				break; }
+			 case 'p': 	{	strPolicy = optarg;				mask |= PARAM_POLICY_REQUIRED;				break; }
+			 case 'o':	{	strSupplierOrderId = optarg; 	mask |= PARAM_SUPPLIER_ORDER_ID_REQUIRED;	break; }
 			 case 'h':
 			 {
 				 showUsage(argv[0]);
 				 return(0);
 			 }
-
 			 case ':':
 			 case '?':
 			 {
 				 fprintf(stderr, "Try `%s --help' for more information.\n", argv[0]);
 				 return(-2);
 			 }
-
 			 default:
 			 {
 				 fprintf(stderr, "%s: invalid option -- %c\n", argv[0], c);
@@ -164,9 +135,42 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	OcrLogger& logger = OcrLogger::getInstance();
+	logger.init(strLogFile, strLogLevel);
+	logger.trace("supplier_orc ..... Start.");
 
 
+	/*
+	if(!checkInputParameterMask(mask))
+	{
+		logger.fatal("missing input variable.");
+		return(-2);
+	}
+	*/
 
+
+	string str = runTesseract("..//data//faller1.png");
+
+#ifdef _DEBUG
+	cout << "OUTPUT: \n" << str << endl;
+#endif
+
+	KeyValueParser parser;
+
+	string keyLieferschein = "Lieferschein";
+	string keyDatum = "Datum";
+	string keyAuftrag = "Auftrag:";
+
+	string out = parser.getValueByKey(str, keyLieferschein, "[0-9]", "6");
+	cout << out << endl;
+
+	out = parser.getValueByKey(str, keyDatum, "[0-9.]", "10");
+	cout << out << endl;
+
+	out = parser.getValueByKey(str, keyAuftrag, "[0-9]", "6");
+	cout << out << endl;
+
+	logger.trace("supplier_orc ..... End.");
 
 
 	return 0;

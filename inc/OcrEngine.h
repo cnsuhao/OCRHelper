@@ -18,14 +18,14 @@ namespace engine
 	{
 	public:
 
-		//dtor
-		virtual ~OcrEngine()
-		{
-			delete [] output;
-		}
+		OcrEngine():
+			_output()
+		{}
+
+		virtual ~OcrEngine() {}
 
 		//methods
-		virtual std::string run() = 0;
+		virtual const std::string& run() = 0;
 
 		void die(const char *errstr)
 		{
@@ -34,7 +34,7 @@ namespace engine
 		}
 
 	protected:
-		char *output;
+		std::string	_output;
 	};
 }
 
